@@ -1,0 +1,47 @@
+/**
+ * Abstracts data from various sources as a list of lines simplifying processing.
+ *
+ * Vikash Madhow
+ */
+
+plugins {
+  id 'java-library'
+  id 'maven-publish'
+}
+
+version "0.1.0"
+group = 'ma.vi'
+sourceCompatibility = JavaVersion.VERSION_17
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+    }
+  }
+}
+
+java {
+  withJavadocJar()
+  withSourcesJar()
+}
+
+repositories {
+  mavenCentral()
+  mavenLocal()
+}
+
+dependencies {
+  implementation("org.apache.poi:poi:4.1.2")
+  implementation("org.apache.poi:poi-ooxml:4.1.2")
+
+  implementation("ma.vi:base:0.4.3")
+
+  implementation("org.jsoup:jsoup:1.13.1")
+
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+}
+
+tasks.named('test') {
+  useJUnitPlatform()
+}
