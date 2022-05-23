@@ -1,7 +1,7 @@
 package ma.vi.datalines.html;
 
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Import;
+import ma.vi.datalines.Structure;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -10,6 +10,7 @@ import org.jsoup.select.Elements;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,37 +20,41 @@ import java.util.List;
  *
  * @author vikash.madhow@gmail.com
  */
-public class HtmlLineReader extends AbstractLineReader {
+public class HtmlTableLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File inputFile, String clientFileName, Import importDef) {
+  public boolean supports(File      inputFile,
+                          String name,
+                          Structure structure) {
     try (BufferedReader in = new BufferedReader(new FileReader(inputFile))) {
       String line;
-      while ((line = in.readLine()) != null && line.trim().length() == 0) ;
+      while ((line = in.readLine()) != null && line.trim().length() == 0);
       if (line != null) {
         line = line.trim().toLowerCase().replace(" ", "");
         return line.startsWith("<!doctypehtml>") || line.startsWith("<html");
       } else {
         return false;
       }
-    } catch (Exception e) {
+    } catch (IOException e) {
       return false;
     }
   }
 
   @Override
-  public void openFile(File inputFile, String clientFileName, Import importDef) {
+  public void openFile(File      inputFile,
+                       String    fileName,
+                       Structure structure) {
     try {
       Document doc = Jsoup.parse(inputFile, "UTF-8");
       Elements tableRows = doc.select("tr");
       numberOfRows = tableRows.size();
       rows = tableRows.iterator();
     } catch (Exception e) {
-      throw new IllegalArgumentException("Could not parse HTML file '" + clientFileName + "'. Reason: " + e, e);
+      throw new IllegalArgumentException("Could not parse HTML file '" + fileName + "'. Reason: " + e, e);
     }
   }
 
   @Override
-  protected List<Object> nextLine() {
+  protected List<Object> nextLine(boolean convertToColumnType) {
     if (rows.hasNext()) {
       List<Object> row = new ArrayList<>();
       Elements cells = rows.next().children();

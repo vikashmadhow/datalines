@@ -2,7 +2,7 @@ package ma.vi.datalines.xl;
 
 import ma.vi.base.util.Numbers;
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Import;
+import ma.vi.datalines.Structure;
 import org.apache.poi.openxml4j.opc.*;
 import org.apache.poi.ss.usermodel.BuiltinFormats;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -30,39 +30,37 @@ import static javax.xml.stream.XMLStreamConstants.*;
  */
 public class XlsxLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File inputFile, String clientFileName, Import importDef) {
-    OPCPackage pkg = null;
-    try {
-      pkg = OPCPackage.open(inputFile, PackageAccess.READ);
-      pkg.revert();
+  public boolean supports(File inputFile, String name, Structure structure) {
+    try (OPCPackage ignored = OPCPackage.open(inputFile, PackageAccess.READ)) {
       return true;
     } catch (Exception e) {
-      if (pkg != null) {
-        pkg.revert();
-      }
       return false;
     }
   }
 
   @Override
-  public void openFile(File inputFile, String clientFileName, Import importDef) {
+  public void openFile(File inputFile, String fileName, Structure structure) {
     try {
-      applyFormatting = importDef.applyFormatting;
-      this.clientFileName = clientFileName;
+      applyFormatting = structure.applyFormatting();
+      this.fileName = fileName;
 
-      // Open Xlsx package and get the part that holds the workbook
+      /*
+       * Open Xlsx package and get the part that holds the workbook.
+       */
       excelPackage = OPCPackage.open(inputFile, PackageAccess.READ);
       PackageRelationship coreDocRelationship = excelPackage.getRelationshipsByType(PackageRelationshipTypes.CORE_DOCUMENT).getRelationship(0);
       PackagePart workbookPart = excelPackage.getPart(coreDocRelationship);
 
-      // find id of worksheet(s) to read.
+      /*
+       * Find id of worksheet(s) to read.
+       */
       int sheetNumber = 1;
       PackageRelationshipCollection relationships = workbookPart.getRelationships();
-      for (PackageRelationship rel : relationships) {
+      for (PackageRelationship rel: relationships) {
         if (rel.getRelationshipType().equals(SHEET_REL_TYPE)) {
-          if (importDef.loadAllSheets) {
+          if (structure.page() <= 0) {
             sheetIds.add(rel.getId());
-          } else if (sheetNumber == importDef.sheet) {
+          } else if (sheetNumber == structure.page()) {
             sheetIds.add(rel.getId());
             break;
           }
@@ -71,41 +69,43 @@ public class XlsxLineReader extends AbstractLineReader {
       }
 
       if (!sheetIds.isEmpty()) {
-        try {
-          xlsx = new XSSFReader(excelPackage);
-          sharedStringsTable = xlsx.getSharedStringsTable();
-          styles = xlsx.getStylesTable();
-          sheetIn = xlsx.getSheet(sheetIds.remove(0));
-          reader = inputFactory.createXMLStreamReader(sheetIn);
-        } catch (Exception e) {
-          throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
-        }
+        xlsx = new XSSFReader(excelPackage);
+        sharedStringsTable = xlsx.getSharedStringsTable();
+        styles = xlsx.getStylesTable();
+        sheetIn = xlsx.getSheet(sheetIds.remove(0));
+        reader = inputFactory.createXMLStreamReader(sheetIn);
+
       } else {
-        throw new IllegalStateException("No sheet data found in " + clientFileName);
+        throw new IllegalStateException("No sheet data found in " + fileName);
       }
     } catch (Exception e) {
-      throw new IllegalArgumentException("Could not read Excel 2007 file '" + clientFileName + "'. Reason: " + e, e);
+      throw new IllegalArgumentException("Could not read XLSX file '" + fileName + "'. Reason: " + e, e);
     }
   }
 
   @Override
-  protected List<Object> nextLine() {
+  protected List<Object> nextLine(boolean convertToColumnType) {
     try {
       if (moveToStartOfRow()) {
         // read columns
         List<Object> row = new ArrayList<>();
         while (reader.nextTag() == START_ELEMENT && "c".equals(reader.getLocalName())) {
-          // get cell reference to determine column (this is necessary because null cells
-          // are not saved in the xml file, therefore a simple counter increment will not work).
+          /*
+           * Get cell reference to determine column (this is necessary because
+           * null cells are not saved in the xml file, therefore a simple counter
+           * increment will not work).
+           */
           String cellRef = reader.getAttributeValue(null, "r");
           int currentCell = cellRef == null ? row.size() : new CellReference(cellRef).getCol();
 
-          // Fill gaps with null, if any
-          while (currentCell > row.size()) {
-            row.add(null);
-          }
+          /*
+           * Fill gaps with null, if any
+           */
+          while (currentCell > row.size()) row.add(null);
 
-          // Get cell type and style.
+          /*
+           * Get cell type and style.
+           */
           Object contents = null;
           CellDataType dataType = CellDataType.NUMBER;
           String cellType = reader.getAttributeValue(null, "t");
@@ -128,7 +128,9 @@ public class XlsxLineReader extends AbstractLineReader {
             dataType = CellDataType.FORMULA;
 
           } else if (cellStyleStr != null) {
-            // It's a number, but almost certainly one with a special style or format
+            /*
+             * A number, but almost certainly with a special style or format.
+             */
             int styleIndex = Integer.parseInt(cellStyleStr);
             XSSFCellStyle style = styles.getStyleAt(styleIndex);
             formatIndex = style.getDataFormat();
@@ -162,8 +164,8 @@ public class XlsxLineReader extends AbstractLineReader {
 
                 case NUMBER:
                   if (DateUtil.isADateFormat(formatIndex, formatString)
-                      || (importFields.containsKey(currentCell + 1)
-                      && importFields.get(currentCell + 1).type().contains("date"))) {
+                   || (columnByLocations.containsKey(String.valueOf(currentCell + 1))
+                    && columnByLocations.get(String.valueOf(currentCell + 1)).type().contains("date"))) {
                     contents = DateUtil.getJavaDate(Double.parseDouble(cellValue));
                   } else if (applyFormatting && formatString != null) {
                     contents = formatter.formatRawCellContents(Double.parseDouble(cellValue), formatIndex, formatString);
@@ -183,7 +185,9 @@ public class XlsxLineReader extends AbstractLineReader {
         }
         return row;
       } else {
-        // If end of current sheet, move to next, if any.
+        /*
+         * If end of current sheet, move to next, if any.
+         */
         if (!sheetIds.isEmpty()) {
           reader.close();
           sheetIn.close();
@@ -191,8 +195,10 @@ public class XlsxLineReader extends AbstractLineReader {
           sheetIn = xlsx.getSheet(sheetIds.remove(0));
           reader = inputFactory.createXMLStreamReader(sheetIn);
 
-          // return separator so that header lines read are reset to 0 and headers
-          // are read again for this sheet.
+          /*
+           * Return separator so that header lines read are reset to 0 and headers
+           * are read again for this sheet.
+           */
           return SEPARATOR;
         }
         return null;
@@ -288,7 +294,7 @@ public class XlsxLineReader extends AbstractLineReader {
    * The ids of sheets to load. If the import is for a single sheet, this will contain the
    * id of the first sheet only; otherwise it will contain the ids of all sheets in the file.
    */
-  private final List<String> sheetIds = new ArrayList<String>();
+  private final List<String> sheetIds = new ArrayList<>();
 
   /**
    * The sheet input stream.
@@ -316,12 +322,12 @@ public class XlsxLineReader extends AbstractLineReader {
   private static final DataFormatter formatter = new DataFormatter();
 
   /**
-   * The excel package object.
+   * The Excel package object.
    */
   private OPCPackage excelPackage;
 
   /**
-   * Relationship type for excel worksheets.
+   * Relationship type for Excel worksheets.
    */
   private static final String SHEET_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 }

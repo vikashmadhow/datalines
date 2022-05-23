@@ -2,8 +2,8 @@ package ma.vi.datalines;
 
 import ma.vi.base.lang.Errors;
 import ma.vi.base.lang.NotFoundException;
-import ma.vi.datalines.html.HtmlLineReader;
-import ma.vi.datalines.text.CharacterDelimitedTextLineReader;
+import ma.vi.datalines.html.HtmlTableLineReader;
+import ma.vi.datalines.text.DelimitedTextLineReader;
 import ma.vi.datalines.text.FixedLengthTextLineReader;
 import ma.vi.datalines.xl.XlsLineReader;
 import ma.vi.datalines.xl.XlsxLineReader;
@@ -22,14 +22,16 @@ public class LineReaderFactory {
    *
    * @param inputFile      The file to read.
    * @param clientFileName File name.
-   * @param importDef      Import definition for reading the file.
+   * @param structure      Import definition for reading the file.
    */
-  public static LineReader get(File inputFile, String clientFileName, Import importDef) {
+  public static LineReader get(File      inputFile,
+                               String    clientFileName,
+                               Structure structure) {
     try {
-      for (Class<? extends LineReader> readerClass : readers) {
+      for (Class<? extends LineReader> readerClass: readers) {
         LineReader reader = readerClass.getDeclaredConstructor().newInstance();
-        if (reader.supports(inputFile, clientFileName, importDef)) {
-          reader.open(inputFile, clientFileName, importDef);
+        if (reader.supports(inputFile, clientFileName, structure)) {
+          reader.open(inputFile, clientFileName, structure);
           return reader;
         }
       }
@@ -47,9 +49,9 @@ public class LineReaderFactory {
   private static final Class<? extends LineReader>[] readers = new Class[] {
     XlsxLineReader.class,
     XlsLineReader.class,
-    HtmlLineReader.class,
+    HtmlTableLineReader.class,
     FixedLengthTextLineReader.class,
-    CharacterDelimitedTextLineReader.class,
+    DelimitedTextLineReader.class,
   };
 
   private LineReaderFactory() {}

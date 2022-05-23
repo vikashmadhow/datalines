@@ -1,11 +1,9 @@
 package ma.vi.datalines.text;
 
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Import;
+import ma.vi.datalines.Structure;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.*;
 
 /**
  * An abstract line reader for reading text files.
@@ -13,13 +11,27 @@ import java.io.FileReader;
  * @author vikash.madhow@gmail.com
  */
 public abstract class TextLineReader extends AbstractLineReader {
+  public static boolean hasTextContent(File inputFile) {
+    try (BufferedReader textIn = new BufferedReader(new FileReader(inputFile))) {
+      /*
+       * Read up to 10 lines to ensure that this is indeed a text file.
+       */
+      for (int i = 0; i < 10 && textIn.readLine() != null; i++);
+      return true;
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
   @Override
-  public void openFile(File inputFile, String clientFileName, Import importDef) {
+  public void openFile(File      inputFile,
+                       String    fileName,
+                       Structure structure) {
     try {
       fileLength = inputFile.length();
       reader = new BufferedReader(new FileReader(inputFile));
     } catch (Exception e) {
-      throw new IllegalArgumentException("Could not open text file '" + clientFileName + "'. Reason: " + e, e);
+      throw new IllegalArgumentException("Could not open text file '" + fileName + "'. Reason: " + e, e);
     }
   }
 
@@ -32,10 +44,9 @@ public abstract class TextLineReader extends AbstractLineReader {
     try {
       if (reader != null) {
         reader.close();
-        reader = null;
       }
-    } catch (Exception e) {
-      throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
+    } catch(IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

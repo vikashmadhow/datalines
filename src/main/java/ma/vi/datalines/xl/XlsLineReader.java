@@ -1,17 +1,17 @@
 package ma.vi.datalines.xl;
 
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Import;
+import ma.vi.datalines.Structure;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.poi.ss.usermodel.CellType.*;
@@ -23,53 +23,52 @@ import static org.apache.poi.ss.usermodel.CellType.*;
  */
 public class XlsLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File inputFile, String clientFileName, Import importDef) {
-    FileInputStream file = null;
-    try {
-      file = new FileInputStream(inputFile);
-      new HSSFWorkbook(file);
+  public boolean supports(File      inputFile,
+                          String name,
+                          Structure structure) {
+    try (HSSFWorkbook ignored = new HSSFWorkbook(new FileInputStream(inputFile))) {
       return true;
-    } catch (Exception e) {
+    } catch (IOException e) {
       return false;
-    } finally {
-      if (file != null) {
-        try {
-          file.close();
-        } catch (Exception e) {
-          log.log(Level.WARNING, "Could not close " + clientFileName, e);
-        }
-      }
     }
   }
 
   @Override
-  public void openFile(File inputFile, String clientFileName, Import importDef) {
+  public void openFile(File      inputFile,
+                       String fileName,
+                       Structure structure) {
     try {
-      applyFormatting = importDef.applyFormatting;
-      this.clientFileName = clientFileName;
+      applyFormatting = structure.applyFormatting();
+      this.fileName = fileName;
 
-      // Open workbook
+      /*
+       * Open workbook.
+       */
       file = new FileInputStream(inputFile);
       workbook = new HSSFWorkbook(file);
       evaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
-      // Sheets to read
-      if (importDef.loadAllSheets) {
+      /*
+       * Sheets to read.
+       */
+      if (structure.page() <= 0) {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
           sheetIds.add(i);
         }
       } else {
-        sheetIds.add(importDef.sheet - 1);
+        sheetIds.add(structure.page() - 1);
       }
 
       if (!sheetIds.isEmpty()) {
-        // open first sheet
+        /*
+         * open first sheet.
+         */
         nextSheet();
       } else {
-        throw new IllegalStateException("No sheet data found in " + clientFileName);
+        throw new IllegalStateException("No sheet data found in " + fileName);
       }
     } catch (Exception e) {
-      throw new IllegalArgumentException("Could not read Excel 97 (xls) file '" + clientFileName + "'. Reason: " + e, e);
+      throw new IllegalArgumentException("Could not read Excel 97 (xls) file '" + fileName + "'. Reason: " + e, e);
     }
   }
 
@@ -82,7 +81,9 @@ public class XlsLineReader extends AbstractLineReader {
     } else {
       Integer sheetId = sheetIds.remove(0);
       if (sheetId >= workbook.getNumberOfSheets()) {
-        throw new IllegalStateException("This workbook (" + clientFileName + ") does not have a sheet at position " + sheetId);
+        throw new IllegalStateException("This workbook (" + fileName
+                                      + ") does not have a sheet at position "
+                                      + sheetId);
       }
       HSSFSheet sheet = workbook.getSheetAt(sheetId);
       rows = sheet.rowIterator();
@@ -90,10 +91,8 @@ public class XlsLineReader extends AbstractLineReader {
   }
 
   @Override
-  protected List<Object> nextLine() {
+  protected List<Object> nextLine(boolean convertToColumnType) {
     if (rows.hasNext()) {
-      // read columns
-      int columnIndex = 1;
       List<Object> row = new ArrayList<>();
       Row cells = rows.next();
       for (int i = 0; i < cells.getLastCellNum(); i++) {
@@ -108,55 +107,61 @@ public class XlsLineReader extends AbstractLineReader {
               type = value.getCellType();
               valueContainer = value;
             } catch (Exception e) {
-              // Error evaluating cell value, just use formula as a normal string
+              /*
+               * Error evaluating cell value, just use formula as a normal string
+               */
               contents = cell.getCellFormula();
-//                            type = -1;
               type = null;
             }
           }
 
           if (type == BOOLEAN) {
-            contents = valueContainer instanceof Cell ?
-                       ((Cell) valueContainer).getBooleanCellValue() :
-                       ((CellValue) valueContainer).getBooleanValue();
+            contents = valueContainer instanceof Cell c
+                     ? c.getBooleanCellValue()
+                     : ((CellValue)valueContainer).getBooleanValue();
           } else if (type == ERROR) {
-            contents = "ERROR: " + (valueContainer instanceof Cell ?
-                                    ((Cell) valueContainer).getErrorCellValue() :
-                                    ((CellValue) valueContainer).getErrorValue());
+            contents = "ERROR: " + (valueContainer instanceof Cell c
+                                  ? c.getErrorCellValue()
+                                  : ((CellValue)valueContainer).getErrorValue());
           } else if (type == STRING) {
-            contents = valueContainer instanceof Cell ?
-                       ((Cell) valueContainer).getStringCellValue() :
-                       ((CellValue) valueContainer).getStringValue();
+            contents = valueContainer instanceof Cell c
+                     ? c.getStringCellValue()
+                     : ((CellValue)valueContainer).getStringValue();
           } else if (type == BLANK) {
             contents = null;
           } else if (type == NUMERIC) {
-            // It's a number, but almost certainly one with a special style or format
+            /*
+             * It's a number, but almost certainly one with a special style or format
+             */
             CellStyle style = cell.getCellStyle();
             int formatIndex = style.getDataFormat();
             String formatString = style.getDataFormatString();
             if (formatString == null) {
               formatString = BuiltinFormats.getBuiltinFormat(formatIndex);
             }
-
-            double cellValue = valueContainer instanceof Cell ?
-                               ((Cell) valueContainer).getNumericCellValue() :
-                               ((CellValue) valueContainer).getNumberValue();
+            double cellValue = valueContainer instanceof Cell c
+                             ? c.getNumericCellValue()
+                             : ((CellValue) valueContainer).getNumberValue();
             boolean format = applyFormatting;
-            if (formatString != null && (format || formatString.trim().toLowerCase().equals("general"))) {
+            if (formatString != null && (format || formatString.trim().equalsIgnoreCase("general"))) {
               contents = formatter.formatRawCellContents(cellValue, formatIndex, formatString);
+
             } else if (DateUtil.isADateFormat(formatIndex, formatString)) {
               contents = DateUtil.getJavaDate(cellValue);
+
             } else {
               contents = cellValue;
             }
           }
         }
         row.add(contents);
-        columnIndex++;
       }
       return row;
+
     } else {
-      // If end of current sheet, move to next, if any.
+      /*
+       * If end of current sheet, move to next, if any.
+       */
       if (!sheetIds.isEmpty()) {
         nextSheet();
         return SEPARATOR;
@@ -211,7 +216,7 @@ public class XlsLineReader extends AbstractLineReader {
    * id of the first sheet only or that of the specified sheet number; otherwise it will
    * contain the ids of all sheets in the file.
    */
-  private final List<Integer> sheetIds = new ArrayList<Integer>();
+  private final List<Integer> sheetIds = new ArrayList<>();
 
   /**
    * Whether to apply formatting to the contents of read cells, or not.

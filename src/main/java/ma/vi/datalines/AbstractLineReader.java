@@ -3,6 +3,9 @@ package ma.vi.datalines;
 import java.io.File;
 import java.util.*;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+
 /**
  * An abstract implementation of {@link LineReader} simplifying concrete
  * implementations by taking care of discarding header and footer lines
@@ -12,22 +15,49 @@ import java.util.*;
  */
 public abstract class AbstractLineReader implements LineReader {
   @Override
-  public final void open(File inputFile, String clientFileName, Import importDef) {
-    this.importDef = importDef;
-    importFields = new HashMap<>();
-    for (ImportField field : importDef.fields.values()) {
-      importFields.put(field.columnIndex(), field);
-    }
-    this.clientFileName = clientFileName;
+  public final void open(File      inputFile,
+                         String    fileName,
+                         Structure structure) {
+    this.fileName = fileName;
     buffer = new ArrayDeque<>();
-    maxBufferedLines = Math.max(importDef.footerLines * 2 + 1, 10);
-    openFile(inputFile, clientFileName, importDef);
+
+    openFile(inputFile, fileName, structure);
+    if (structure == null) {
+      /*
+       * Derive structure from header.
+       */
+      List<Object> line = readNextLine(true, false);
+      if (line != null && line != SEPARATOR) {
+        List<Column> cols = new ArrayList<>();
+        int i = 1;
+        for (Object o: line) {
+          String colName = o.toString().trim().toLowerCase()
+                            .replaceAll("\\W", "_");
+          cols.add(new Column(colName, "string", String.valueOf(i), null, emptyMap()));
+          i++;
+        }
+        structure = new Structure(1, 0, true,
+                                  new char[]{','}, '"', false, 1, cols);
+        buffer.add(line);
+      }
+    }
+
+    this.structure = structure == null ? new Structure() : structure;
+    this.maxBufferedLines = Math.max(this.structure.footerLines() * 2 + 1, 10);
+    columnByLocations = new HashMap<>();
+    for (Column column: this.structure.columns()) {
+      if (column.location() != null) {
+        columnByLocations.put(column.location(), column);
+      }
+    }
   }
 
   /**
    * Subclasses must implement this method to open file for reading.
    */
-  protected abstract void openFile(File inputFile, String clientFileName, Import importDef);
+  protected abstract void openFile(File      inputFile,
+                                   String    fileName,
+                                   Structure structure);
 
   @Override
   public Iterator<List<Object>> iterator() {
@@ -40,14 +70,13 @@ public abstract class AbstractLineReader implements LineReader {
       return false;
     } else {
       boolean reset;
-      reset:
-      do {
+      reset: do {
         reset = false;
 
         // read and discard header lines: if skipBlankLines is true,
         // blank lines does not count towards the header lines count.
-        while (headerLinesRead < importDef.headerLines) {
-          List<Object> line = readNextLine();
+        while (headerLinesRead < structure.headerLines()) {
+          List<Object> line = readNextLine(structure.ignoreBlankLines(), false);
           if (line == SEPARATOR) {
             headerLinesRead = 0;
           } else {
@@ -61,10 +90,10 @@ public abstract class AbstractLineReader implements LineReader {
         if (buffer.isEmpty()) {
           List<Object> line;
           while (buffer.size() < maxBufferedLines) {
-            line = readNextLine();
+            line = readNextLine(structure.ignoreBlankLines(), true);
             if (line == null || line == SEPARATOR) {
               // End-of-input or end-of-sheet: eliminate at most footerLines rows.
-              for (int i = 0; i < importDef.footerLines && !buffer.isEmpty(); i++) {
+              for (int i = 0; i < structure.footerLines() && !buffer.isEmpty(); i++) {
                 buffer.removeLast();
               }
               if (line == SEPARATOR) {
@@ -86,8 +115,7 @@ public abstract class AbstractLineReader implements LineReader {
             }
           }
         }
-      }
-      while (reset);
+      } while (reset);
 
       if (!buffer.isEmpty()) {
         return true;
@@ -111,13 +139,11 @@ public abstract class AbstractLineReader implements LineReader {
   /**
    * Reads the next line, skipping blank lines if import definition requires so.
    */
-  private List<Object> readNextLine() {
+  private List<Object> readNextLine(boolean ignoreBlankLines, boolean convertToColumnType) {
     List<Object> line;
-    boolean skipBlankLines = importDef.skipBlankLines;
     do {
-      line = nextLine();
-    }
-    while (skipBlankLines && line != null && isEmpty(line));
+      line = nextLine(convertToColumnType);
+    } while (ignoreBlankLines && line != null && isEmpty(line));
     return line;
   }
 
@@ -140,11 +166,11 @@ public abstract class AbstractLineReader implements LineReader {
    * Returns the next line from the underlying input or null if none. This method
    * should continue to return after the final line was read even if called several times.
    */
-  protected abstract List<Object> nextLine();
+  protected abstract List<Object> nextLine(boolean convertToColumnType);
 
   @Override
   public void remove() {
-    throw new UnsupportedOperationException("Line readers does not support remove() op.");
+    throw new UnsupportedOperationException("Line readers does not support remove().");
   }
 
   /**
@@ -157,14 +183,17 @@ public abstract class AbstractLineReader implements LineReader {
   /**
    * The import file name as it is on the client-side.
    */
-  protected String clientFileName;
+  protected String fileName;
 
   /**
-   * The import definition.
+   * The structure of the input file.
    */
-  protected Import importDef;
+  protected Structure structure;
 
-  protected Map<Integer, ImportField> importFields;
+  /**
+   * Columns by location
+   */
+  protected Map<String, Column> columnByLocations;
 
   /**
    * A look-ahead buffer big enough to ensure that footer lines are ignored.
@@ -195,5 +224,5 @@ public abstract class AbstractLineReader implements LineReader {
    * the next. When the reader encounters this separator, it reset the headerLinesRead
    * variable to 0 so that header lines are read for this new sheet.
    */
-  protected static final List<Object> SEPARATOR = Collections.singletonList("SEPARATOR");
+  protected static final List<Object> SEPARATOR = singletonList("SEPARATOR");
 }
