@@ -27,11 +27,11 @@ public interface LineReader extends Iterable<List<Object>>,
    *
    * @param inputFile The file to read.
    * @param name File name.
-   * @param structure The structure describing the content of the input file.
+   * @param format The structure describing the content of the input file.
    */
-  boolean supports(File      inputFile,
-                   String    name,
-                   Structure structure);
+  boolean supports(File   inputFile,
+                   String name,
+                   Format format);
 
   /**
    * Opens the file for reading. This method is called only if the supports method
@@ -43,17 +43,17 @@ public interface LineReader extends Iterable<List<Object>>,
    *
    * @param inputFile The file to read.
    * @param fileName File name.
-   * @param structure The structure describing the content of the input file.
+   * @param format The structure describing the content of the input file.
    */
-  default void open(File inputFile, String fileName, Structure structure) {
+  default void open(File inputFile, String fileName, Format format) {
     try {
-      open(new FileInputStream(inputFile), fileName, structure);
+      open(new FileInputStream(inputFile), fileName, format);
     } catch(IOException ioe) {
       throw new RuntimeException(ioe);
     }
   }
 
-  default void open(InputStream input, String fileName, Structure structure) {
+  default void open(InputStream input, String fileName, Format format) {
     try {
       int pos = fileName.lastIndexOf('.');
       String prefix = pos == -1 ? fileName : fileName.substring(0, pos);

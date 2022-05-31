@@ -36,21 +36,21 @@ import static java.util.stream.Collectors.toMap;
  *
  * @author vikash.madhow@gmail.com
  */
-public record Structure(int     headerLines,
-                        int     footerLines,
-                        boolean ignoreBlankLines,
-                        char[]  columnSeparatorChars,
-                        char    columnQuoteChar,
-                        boolean applyFormatting,
-                        int     page,
-                        List<Column> columns) {
+public record Format(int     headerLines,
+                     int     footerLines,
+                     boolean ignoreBlankLines,
+                     char[]  columnSeparatorChars,
+                     char    columnQuoteChar,
+                     boolean applyFormatting,
+                     int     page,
+                     List<Column> columns) {
 
-  public Structure() {
+  public Format() {
     this(1, 0, true, DEFAULT_COLUMN_SEP,
          DEFAULT_COLUMN_QUOTE, false, 1, emptyList());
   }
 
-  public static Structure TabSeparated() {
+  public static Format TabSeparated() {
     return newBuilder().columnSeparatorChars('\t').build();
   }
 
@@ -107,9 +107,9 @@ public record Structure(int     headerLines,
       return this;
     }
 
-    public Structure build() {
-      return new Structure(headerLines, footerLines, ignoreBlankLines, columnSeparatorChars,
-                           columnQuoteChar, applyFormatting, page, columns);
+    public Format build() {
+      return new Format(headerLines, footerLines, ignoreBlankLines, columnSeparatorChars,
+                        columnQuoteChar, applyFormatting, page, columns);
     }
 
     private int     headerLines = 1;

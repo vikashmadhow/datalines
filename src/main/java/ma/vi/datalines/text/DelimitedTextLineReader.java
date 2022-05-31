@@ -2,15 +2,15 @@ package ma.vi.datalines.text;
 
 import ma.vi.base.util.Convert;
 import ma.vi.datalines.Column;
-import ma.vi.datalines.Structure;
+import ma.vi.datalines.Format;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static ma.vi.datalines.Structure.DEFAULT_COLUMN_QUOTE;
-import static ma.vi.datalines.Structure.DEFAULT_COLUMN_SEP;
+import static ma.vi.datalines.Format.DEFAULT_COLUMN_QUOTE;
+import static ma.vi.datalines.Format.DEFAULT_COLUMN_SEP;
 
 /**
  * A line reader for reading character-delimited text files.
@@ -19,8 +19,8 @@ import static ma.vi.datalines.Structure.DEFAULT_COLUMN_SEP;
  */
 public class DelimitedTextLineReader extends TextLineReader {
   @Override
-  public boolean supports(File inputFile, String fileName, Structure structure) {
-    if (structure.columnSeparatorChars().length > 0) {
+  public boolean supports(File inputFile, String fileName, Format format) {
+    if (format.columnSeparatorChars().length > 0) {
       return hasTextContent(inputFile);
     }
     return false;
@@ -41,7 +41,7 @@ public class DelimitedTextLineReader extends TextLineReader {
            * line for the file.
            */
           int closestSeparator = Integer.MAX_VALUE;
-          char[] separators = structure != null ? structure.columnSeparatorChars() : DEFAULT_COLUMN_SEP;
+          char[] separators = format != null ? format.columnSeparatorChars() : DEFAULT_COLUMN_SEP;
           for (char c: separators) {
             int pos = line.indexOf(c);
             if (pos != -1 && pos < closestSeparator) {
@@ -62,21 +62,29 @@ public class DelimitedTextLineReader extends TextLineReader {
         List<Object> row = new ArrayList<>();
         StringBuilder column = new StringBuilder();
         for (char c: line.toCharArray()) {
-          if (c == (structure != null ? structure.columnQuoteChar() : DEFAULT_COLUMN_QUOTE)) {
+          if (c == (format != null ? format.columnQuoteChar() : DEFAULT_COLUMN_QUOTE)) {
             if (quoted) {
-              // End quote.
+              /*
+               * End quote.
+               */
               quoted = false;
             } else if (column.toString().trim().length() == 0) {
-              // Start quote
+              /*
+               * Start quote.
+               */
               quoted = true;
             } else {
-              // A quote character has been found in the middle of a column.
-              // Just add to the column, without changing the quote status.
+              /*
+               * A quote character has been found in the middle of a column. Just
+               * add to the column, without changing the quote status.
+               */
               column.append(c);
             }
           } else if (c == separator) {
             if (quoted) {
-              // Separator char found inside a quoted string, append.
+              /*
+               * Separator char found inside a quoted string, append.
+               */
               column.append(c);
             } else {
               row.add(convertValue(column.toString(), row.size(), convertToColumnType));
@@ -97,11 +105,8 @@ public class DelimitedTextLineReader extends TextLineReader {
   }
 
   private Object convertValue(Object value, int pos, boolean convertToColumnType) {
-    if (convertToColumnType) {
-      Column col = structure == null ? null
-                 : structure.columns().size() >= pos ? structure.columns().get(pos)
-                 : null;
-      value = convertValue(value, col);
+    if (convertToColumnType && format != null && format.columns().size() > pos) {
+      value = convertValue(value, format.columns().get(pos));
     }
     return value;
   }

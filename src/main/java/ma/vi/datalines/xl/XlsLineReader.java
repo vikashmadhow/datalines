@@ -1,7 +1,7 @@
 package ma.vi.datalines.xl;
 
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Structure;
+import ma.vi.datalines.Format;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -23,9 +23,7 @@ import static org.apache.poi.ss.usermodel.CellType.*;
  */
 public class XlsLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File      inputFile,
-                          String name,
-                          Structure structure) {
+  public boolean supports(File inputFile, String name, Format format) {
     try (HSSFWorkbook ignored = new HSSFWorkbook(new FileInputStream(inputFile))) {
       return true;
     } catch (IOException e) {
@@ -34,11 +32,9 @@ public class XlsLineReader extends AbstractLineReader {
   }
 
   @Override
-  public void openFile(File      inputFile,
-                       String fileName,
-                       Structure structure) {
+  public void openFile(File inputFile, String fileName, Format format) {
     try {
-      applyFormatting = structure.applyFormatting();
+      applyFormatting = format.applyFormatting();
       this.fileName = fileName;
 
       /*
@@ -51,12 +47,12 @@ public class XlsLineReader extends AbstractLineReader {
       /*
        * Sheets to read.
        */
-      if (structure.page() <= 0) {
+      if (format.page() <= 0) {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
           sheetIds.add(i);
         }
       } else {
-        sheetIds.add(structure.page() - 1);
+        sheetIds.add(format.page() - 1);
       }
 
       if (!sheetIds.isEmpty()) {

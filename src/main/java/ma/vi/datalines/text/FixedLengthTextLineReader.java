@@ -1,8 +1,7 @@
 package ma.vi.datalines.text;
 
-import ma.vi.base.util.Convert;
 import ma.vi.datalines.Column;
-import ma.vi.datalines.Structure;
+import ma.vi.datalines.Format;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,28 +17,24 @@ import static java.lang.Integer.parseInt;
  */
 public class FixedLengthTextLineReader extends TextLineReader {
   @Override
-  public boolean supports(File      inputFile,
-                          String    fileName,
-                          Structure structure) {
-    return structure != null
-        && structure.columns().stream()
-                    .anyMatch(c -> c.location().startsWith("["))
+  public boolean supports(File inputFile, String fileName, Format format) {
+    return format != null
+        && format.columns().stream()
+                 .anyMatch(c -> c.location().startsWith("["))
         && hasTextContent(inputFile);
   }
 
   @Override
-  public void openFile(File      inputFile,
-                       String    fileName,
-                       Structure structure) {
-    super.openFile(inputFile, fileName, structure);
-    columnLocations = structure.columns().stream()
-                               .filter(c -> c.location().startsWith("["))
-                               .map(c -> c.location().substring(1, c.location().length()- 1).split("-"))
-                               .map(l -> l.length >= 2
+  public void openFile(File inputFile, String fileName, Format format) {
+    super.openFile(inputFile, fileName, format);
+    columnLocations = format.columns().stream()
+                            .filter(c -> c.location().startsWith("["))
+                            .map(c -> c.location().substring(1, c.location().length()- 1).split("-"))
+                            .map(l -> l.length >= 2
                                        ? new ColumnLocation(parseInt(l[0].trim()), parseInt(l[1].trim()))
                                        : new ColumnLocation(parseInt(l[0].trim()), -1))
-                               .sorted()
-                               .toList();
+                            .sorted()
+                            .toList();
   }
 
   @Override

@@ -2,7 +2,7 @@ package ma.vi.datalines.xl;
 
 import ma.vi.base.util.Numbers;
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Structure;
+import ma.vi.datalines.Format;
 import org.apache.poi.openxml4j.opc.*;
 import org.apache.poi.ss.usermodel.BuiltinFormats;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -30,7 +30,7 @@ import static javax.xml.stream.XMLStreamConstants.*;
  */
 public class XlsxLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File inputFile, String name, Structure structure) {
+  public boolean supports(File inputFile, String name, Format format) {
     try (OPCPackage ignored = OPCPackage.open(inputFile, PackageAccess.READ)) {
       return true;
     } catch (Exception e) {
@@ -39,9 +39,9 @@ public class XlsxLineReader extends AbstractLineReader {
   }
 
   @Override
-  public void openFile(File inputFile, String fileName, Structure structure) {
+  public void openFile(File inputFile, String fileName, Format format) {
     try {
-      applyFormatting = structure.applyFormatting();
+      applyFormatting = format.applyFormatting();
       this.fileName = fileName;
 
       /*
@@ -58,9 +58,9 @@ public class XlsxLineReader extends AbstractLineReader {
       PackageRelationshipCollection relationships = workbookPart.getRelationships();
       for (PackageRelationship rel: relationships) {
         if (rel.getRelationshipType().equals(SHEET_REL_TYPE)) {
-          if (structure.page() <= 0) {
+          if (format.page() <= 0) {
             sheetIds.add(rel.getId());
-          } else if (sheetNumber == structure.page()) {
+          } else if (sheetNumber == format.page()) {
             sheetIds.add(rel.getId());
             break;
           }
@@ -99,7 +99,7 @@ public class XlsxLineReader extends AbstractLineReader {
           int currentCell = cellRef == null ? row.size() : new CellReference(cellRef).getCol();
 
           /*
-           * Fill gaps with null, if any
+           * Fill gaps with null, if any.
            */
           while (currentCell > row.size()) row.add(null);
 
@@ -140,7 +140,9 @@ public class XlsxLineReader extends AbstractLineReader {
             }
           }
 
-          // Read cell contents, parse and format.
+          /*
+           * Read cell contents, parse and format.
+           */
           while (reader.nextTag() != END_ELEMENT || !reader.getLocalName().equals("c")) {
             String cellValue = reader.getElementText();
             if (reader.getLocalName().equals("v")) {
@@ -291,8 +293,9 @@ public class XlsxLineReader extends AbstractLineReader {
   private XMLStreamReader reader;
 
   /**
-   * The ids of sheets to load. If the import is for a single sheet, this will contain the
-   * id of the first sheet only; otherwise it will contain the ids of all sheets in the file.
+   * The ids of sheets to load. If the import is for a single sheet, this will
+   * contain the id of the first sheet only; otherwise it will contain the ids
+   * of all sheets in the file.
    */
   private final List<String> sheetIds = new ArrayList<>();
 
@@ -312,7 +315,7 @@ public class XlsxLineReader extends AbstractLineReader {
   private StylesTable styles;
 
   /**
-   * Whether to apply formatting to the contents of read cells, or not.
+   * Whether to apply formatting to the contents of read cells.
    */
   private boolean applyFormatting;
 

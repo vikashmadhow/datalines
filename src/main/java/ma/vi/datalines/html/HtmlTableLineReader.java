@@ -1,7 +1,7 @@
 package ma.vi.datalines.html;
 
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Structure;
+import ma.vi.datalines.Format;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -22,9 +22,7 @@ import java.util.List;
  */
 public class HtmlTableLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File      inputFile,
-                          String name,
-                          Structure structure) {
+  public boolean supports(File inputFile, String name, Format format) {
     try (BufferedReader in = new BufferedReader(new FileReader(inputFile))) {
       String line;
       while ((line = in.readLine()) != null && line.trim().length() == 0);
@@ -40,9 +38,7 @@ public class HtmlTableLineReader extends AbstractLineReader {
   }
 
   @Override
-  public void openFile(File      inputFile,
-                       String    fileName,
-                       Structure structure) {
+  public void openFile(File inputFile, String fileName, Format format) {
     try {
       Document doc = Jsoup.parse(inputFile, "UTF-8");
       Elements tableRows = doc.select("tr");

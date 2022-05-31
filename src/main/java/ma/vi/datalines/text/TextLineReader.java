@@ -1,7 +1,7 @@
 package ma.vi.datalines.text;
 
 import ma.vi.datalines.AbstractLineReader;
-import ma.vi.datalines.Structure;
+import ma.vi.datalines.Format;
 
 import java.io.*;
 
@@ -24,9 +24,7 @@ public abstract class TextLineReader extends AbstractLineReader {
   }
 
   @Override
-  public void openFile(File      inputFile,
-                       String    fileName,
-                       Structure structure) {
+  public void openFile(File inputFile, String fileName, Format format) {
     try {
       fileLength = inputFile.length();
       reader = new BufferedReader(new FileReader(inputFile));

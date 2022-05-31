@@ -15,14 +15,14 @@ import static java.util.Collections.singletonList;
  */
 public abstract class AbstractLineReader implements LineReader {
   @Override
-  public final void open(File      inputFile,
-                         String    fileName,
-                         Structure structure) {
+  public final void open(File   inputFile,
+                         String fileName,
+                         Format format) {
     this.fileName = fileName;
     buffer = new ArrayDeque<>();
 
-    openFile(inputFile, fileName, structure);
-    if (structure == null) {
+    openFile(inputFile, fileName, format);
+    if (format == null) {
       /*
        * Derive structure from header.
        */
@@ -36,16 +36,16 @@ public abstract class AbstractLineReader implements LineReader {
           cols.add(new Column(colName, "string", String.valueOf(i), null, emptyMap()));
           i++;
         }
-        structure = new Structure(1, 0, true,
-                                  new char[]{','}, '"', false, 1, cols);
+        format = new Format(1, 0, true,
+                               new char[]{','}, '"', false, 1, cols);
         buffer.add(line);
       }
     }
 
-    this.structure = structure == null ? new Structure() : structure;
-    this.maxBufferedLines = Math.max(this.structure.footerLines() * 2 + 1, 10);
+    this.format = format == null ? new Format() : format;
+    this.maxBufferedLines = Math.max(this.format.footerLines() * 2 + 1, 10);
     columnByLocations = new HashMap<>();
-    for (Column column: this.structure.columns()) {
+    for (Column column: this.format.columns()) {
       if (column.location() != null) {
         columnByLocations.put(column.location(), column);
       }
@@ -55,9 +55,9 @@ public abstract class AbstractLineReader implements LineReader {
   /**
    * Subclasses must implement this method to open file for reading.
    */
-  protected abstract void openFile(File      inputFile,
-                                   String    fileName,
-                                   Structure structure);
+  protected abstract void openFile(File   inputFile,
+                                   String fileName,
+                                   Format format);
 
   @Override
   public Iterator<List<Object>> iterator() {
@@ -73,10 +73,12 @@ public abstract class AbstractLineReader implements LineReader {
       reset: do {
         reset = false;
 
-        // read and discard header lines: if skipBlankLines is true,
-        // blank lines does not count towards the header lines count.
-        while (headerLinesRead < structure.headerLines()) {
-          List<Object> line = readNextLine(structure.ignoreBlankLines(), false);
+        /*
+         * Read and discard header lines: if skipBlankLines is true; blank lines
+         * do not count towards the header lines count.
+         */
+        while (headerLinesRead < format.headerLines()) {
+          List<Object> line = readNextLine(format.ignoreBlankLines(), false);
           if (line == SEPARATOR) {
             headerLinesRead = 0;
           } else {
@@ -84,22 +86,28 @@ public abstract class AbstractLineReader implements LineReader {
           }
         }
 
-        // If number of lines in buffer cannot be used to determine
-        // whether we have reached the end of input, read more up to
-        // the maxBufferedLines threshold.
+        /*
+         * If number of lines in buffer cannot be used to determine whether we
+         * have reached the end of input, read more up to the maxBufferedLines
+         * threshold.
+         */
         if (buffer.isEmpty()) {
           List<Object> line;
           while (buffer.size() < maxBufferedLines) {
-            line = readNextLine(structure.ignoreBlankLines(), true);
+            line = readNextLine(format.ignoreBlankLines(), true);
             if (line == null || line == SEPARATOR) {
-              // End-of-input or end-of-sheet: eliminate at most footerLines rows.
-              for (int i = 0; i < structure.footerLines() && !buffer.isEmpty(); i++) {
+              /*
+               * End-of-input or end-of-sheet: eliminate at most footerLines rows.
+               */
+              for (int i = 0; i < format.footerLines() && !buffer.isEmpty(); i++) {
                 buffer.removeLast();
               }
               if (line == SEPARATOR) {
-                // End of sheet: if buffer is empty, read from next sheet, otherwise,
-                // continue with this sheet until it ends and ensure that next sheet
-                // is read properly (skipping header lines as required).
+                /*
+                 * End of sheet: if buffer is empty, read from next sheet, otherwise,
+                 * continue with this sheet until it ends and ensure that next sheet
+                 * is read properly (skipping header lines as required.
+                 */
                 headerLinesRead = 0;
                 if (buffer.isEmpty()) {
                   reset = true;
@@ -188,10 +196,10 @@ public abstract class AbstractLineReader implements LineReader {
   /**
    * The structure of the input file.
    */
-  protected Structure structure;
+  protected Format format;
 
   /**
-   * Columns by location
+   * Columns by location.
    */
   protected Map<String, Column> columnByLocations;
 
@@ -201,8 +209,9 @@ public abstract class AbstractLineReader implements LineReader {
   private Deque<List<Object>> buffer;
 
   /**
-   * The look-ahead buffer is also used as a performance buffer with up to this number
-   * of lines read in anticipation. This is always greater than the number of footerLines + 1.
+   * The look-ahead buffer is also used as a performance buffer with up to this
+   * number of lines read in anticipation. This is always greater than the number
+   * of footerLines + 1.
    */
   private int maxBufferedLines;
 
@@ -213,16 +222,17 @@ public abstract class AbstractLineReader implements LineReader {
   private int headerLinesRead;
 
   /**
-   * Set to true when the reader is closed. Used to prevent any further attempt to
-   * read lines after the underlying inputs have been closed.
+   * Set to true when the reader is closed. Used to prevent any further attempt
+   * to read lines after the underlying inputs have been closed.
    */
   protected boolean closed;
 
   /**
    * Separates multiple pages of rows (for files supporting those such as Excel).
-   * This special row is returned after all rows of one sheet and before any rows from
-   * the next. When the reader encounters this separator, it reset the headerLinesRead
-   * variable to 0 so that header lines are read for this new sheet.
+   * This special row is returned after all rows of one sheet and before any rows
+   * from the next. When the reader encounters this separator, it reset the
+   * `headerLinesRead` variable to 0 so that header lines are read for this new
+   * sheet.
    */
   protected static final List<Object> SEPARATOR = singletonList("SEPARATOR");
 }

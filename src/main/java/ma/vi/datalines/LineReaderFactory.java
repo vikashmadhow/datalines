@@ -20,25 +20,23 @@ public class LineReaderFactory {
    * Returns a line reader initialised to read the input file if one could be found,
    * or throws NotFoundException otherwise.
    *
-   * @param inputFile      The file to read.
-   * @param clientFileName File name.
-   * @param structure      Import definition for reading the file.
+   * @param inputFile The file to read.
+   * @param fileName File name.
+   * @param format Import definition for reading the file.
    */
-  public static LineReader get(File      inputFile,
-                               String    clientFileName,
-                               Structure structure) {
+  public static LineReader get(File inputFile, String fileName, Format format) {
     try {
       for (Class<? extends LineReader> readerClass: readers) {
         LineReader reader = readerClass.getDeclaredConstructor().newInstance();
-        if (reader.supports(inputFile, clientFileName, structure)) {
-          reader.open(inputFile, clientFileName, structure);
+        if (reader.supports(inputFile, fileName, format)) {
+          reader.open(inputFile, fileName, format);
           return reader;
         }
       }
     } catch (Exception e) {
       throw Errors.unchecked(e);
     }
-    throw new NotFoundException("A line reader which knows how to read '" + clientFileName
+    throw new NotFoundException("A line reader which knows how to read '" + fileName
                               + "' (" + inputFile + ") could not be found.");
   }
 

@@ -15,7 +15,7 @@ public class DelimitedTextTest {
   public void readDelimitedTextUnstructured() throws Exception {
     try (DelimitedTextLineReader r = new DelimitedTextLineReader()) {
       r.open(new File(DelimitedTextTest.class.getResource("/data/test_data.csv").toURI()),
-                 "test_data.csv", Structure.TabSeparated());
+             "test_data.csv", Format.TabSeparated());
 
       assertEquals(Arrays.asList("1",	  "Vikash Madhow",     "1234567",	    "59, Avenue Telfair, Quatre Bornes","17 05 1977"),  r.next());
       assertEquals(Arrays.asList("2",	  "Avish Madhow",      "12844-4343",	"59, Avenue Telfair, Quatre Bornes","1 02 2001"),   r.next());
@@ -42,14 +42,14 @@ public class DelimitedTextTest {
     try (DelimitedTextLineReader r = new DelimitedTextLineReader()) {
       r.open(new File(DelimitedTextTest.class.getResource("/data/test_data.csv").toURI()),
              "test_data.csv",
-             Structure.newBuilder()
-                      .columnSeparatorChars('\t')
-                      .column(new Column("id",      "long"))
-                      .column(new Column("name" ,   "string"))
-                      .column(new Column("phone",   "string"))
-                      .column(new Column("address", "string"))
-                      .column(new Column("dob",     "date"))
-                      .build());
+             Format.newBuilder()
+                   .columnSeparatorChars('\t')
+                   .column(new Column("id",      "long"))
+                   .column(new Column("name" ,   "string"))
+                   .column(new Column("phone",   "string"))
+                   .column(new Column("address", "string"))
+                   .column(new Column("dob",     "date"))
+                   .build());
 
       assertEquals(Arrays.asList(1L,  "Vikash Madhow",           "1234567",   "59, Avenue Telfair, Quatre Bornes", Convert.convertDate("17 05 1977")),  r.next());
       assertEquals(Arrays.asList(2L,	"Avish Madhow",           "12844-4343",	"59, Avenue Telfair, Quatre Bornes", Convert.convertDate("1 02 2001")),   r.next());
@@ -76,14 +76,14 @@ public class DelimitedTextTest {
     try (DelimitedTextLineReader r = new DelimitedTextLineReader()) {
       r.open(new File(DelimitedTextTest.class.getResource("/data/test_data_err.csv").toURI()),
              "test_data.csv",
-             Structure.newBuilder()
-                      .columnSeparatorChars('\t')
-                      .column(new Column("id",      "long"))
-                      .column(new Column("name" ,   "string"))
-                      .column(new Column("phone",   "string"))
-                      .column(new Column("address", "string"))
-                      .column(new Column("dob",     "date"))
-                      .build());
+             Format.newBuilder()
+                   .columnSeparatorChars('\t')
+                   .column(new Column("id",      "long"))
+                   .column(new Column("name" ,   "string"))
+                   .column(new Column("phone",   "string"))
+                   .column(new Column("address", "string"))
+                   .column(new Column("dob",     "date"))
+                   .build());
 
       assertEquals(Arrays.asList(1L,  "Vikash Madhow",           "1234567",   "59, Avenue Telfair, Quatre Bornes", Convert.convertDate("17 05 1977")),  r.next());
       assertEquals(Arrays.asList(2L,	"Avish Madhow",           "12844-4343",	"59, Avenue Telfair, Quatre Bornes", Convert.convertDate("1 02 2001")),   r.next());
