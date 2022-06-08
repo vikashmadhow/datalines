@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 
 /**
  * A line reader reads data from a file sequentially and returns the data as an
@@ -19,17 +19,17 @@ import java.util.List;
  *
  * @author vikash.madhow@gmail.com
  */
-public interface LineReader extends Iterable<List<Object>>,
-                                    Iterator<List<Object>>,
+public interface LineReader extends Iterable<Map<String, Object>>,
+                                    Iterator<Map<String, Object>>,
                                     AutoCloseable {
   /**
    * Returns true if this reader can read the input file.
    *
-   * @param inputFile The file to read.
+   * @param file The file to read.
    * @param name File name.
    * @param format The structure describing the content of the input file.
    */
-  boolean supports(File   inputFile,
+  boolean supports(File   file,
                    String name,
                    Format format);
 
@@ -41,23 +41,25 @@ public interface LineReader extends Iterable<List<Object>>,
    * the file itself. This is possible for files such as Excel which have a header
    * line. The structure obtained may contain errors.
    *
-   * @param inputFile The file to read.
-   * @param fileName File name.
+   * @param file The file to read.
+   * @param filename File name.
    * @param format The structure describing the content of the input file.
    */
-  default void open(File inputFile, String fileName, Format format) {
+  default void open(File   file,
+                    String filename,
+                    Format format) {
     try {
-      open(new FileInputStream(inputFile), fileName, format);
+      open(new FileInputStream(file), filename, format);
     } catch(IOException ioe) {
       throw new RuntimeException(ioe);
     }
   }
 
-  default void open(InputStream input, String fileName, Format format) {
+  default void open(InputStream input, String filename, Format format) {
     try {
-      int pos = fileName.lastIndexOf('.');
-      String prefix = pos == -1 ? fileName : fileName.substring(0, pos);
-      String suffix = pos == -1 ? "tmp" : fileName.substring(pos + 1);
+      int pos = filename.lastIndexOf('.');
+      String prefix = pos == -1 ? filename : filename.substring(0, pos);
+      String suffix = pos == -1 ? "tmp" : filename.substring(pos + 1);
       File file = File.createTempFile(prefix, suffix);
       Files.copy(input, file.toPath());
     } catch(IOException ioe) {

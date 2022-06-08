@@ -9,9 +9,7 @@ import org.apache.poi.ss.usermodel.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.apache.poi.ss.usermodel.CellType.*;
@@ -23,8 +21,8 @@ import static org.apache.poi.ss.usermodel.CellType.*;
  */
 public class XlsLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File inputFile, String name, Format format) {
-    try (HSSFWorkbook ignored = new HSSFWorkbook(new FileInputStream(inputFile))) {
+  public boolean supports(File file, String name, Format format) {
+    try (HSSFWorkbook ignored = new HSSFWorkbook(new FileInputStream(file))) {
       return true;
     } catch (IOException e) {
       return false;
@@ -87,9 +85,9 @@ public class XlsLineReader extends AbstractLineReader {
   }
 
   @Override
-  protected List<Object> nextLine(boolean convertToColumnType) {
+  protected Map<String, Object> nextLine(boolean convertToColumnType) {
     if (rows.hasNext()) {
-      List<Object> row = new ArrayList<>();
+      Map<String, Object> row = new LinkedHashMap<>();
       Row cells = rows.next();
       for (int i = 0; i < cells.getLastCellNum(); i++) {
         Cell cell = cells.getCell(i);
@@ -150,7 +148,7 @@ public class XlsLineReader extends AbstractLineReader {
             }
           }
         }
-        row.add(contents);
+        row.put(String.valueOf(i+1), contents);
       }
       return row;
 

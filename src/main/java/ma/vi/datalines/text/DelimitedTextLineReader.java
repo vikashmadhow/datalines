@@ -5,8 +5,8 @@ import ma.vi.datalines.Column;
 import ma.vi.datalines.Format;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import static ma.vi.datalines.Format.DEFAULT_COLUMN_QUOTE;
@@ -19,15 +19,15 @@ import static ma.vi.datalines.Format.DEFAULT_COLUMN_SEP;
  */
 public class DelimitedTextLineReader extends TextLineReader {
   @Override
-  public boolean supports(File inputFile, String fileName, Format format) {
+  public boolean supports(File file, String fileName, Format format) {
     if (format.columnSeparatorChars().length > 0) {
-      return hasTextContent(inputFile);
+      return hasTextContent(file);
     }
     return false;
   }
 
   @Override
-  protected List<Object> nextLine(boolean convertToColumnType) {
+  protected Map<String, Object> nextLine(boolean convertToColumnType) {
     try {
       String line = reader.readLine();
       linesRead++;
@@ -58,8 +58,9 @@ public class DelimitedTextLineReader extends TextLineReader {
           estimateTotalLines = fileLength / averageLineLength;
         }
 
+        int i = 1;
         boolean quoted = false;
-        List<Object> row = new ArrayList<>();
+        Map<String, Object> row = new LinkedHashMap<>();
         StringBuilder column = new StringBuilder();
         for (char c: line.toCharArray()) {
           if (c == (format != null ? format.columnQuoteChar() : DEFAULT_COLUMN_QUOTE)) {
@@ -87,7 +88,8 @@ public class DelimitedTextLineReader extends TextLineReader {
                */
               column.append(c);
             } else {
-              row.add(convertValue(column.toString(), row.size(), convertToColumnType));
+              row.put(String.valueOf(i++),
+                      convertValue(column.toString(), row.size(), convertToColumnType));
               column.delete(0, column.length());
             }
           } else {
@@ -95,7 +97,8 @@ public class DelimitedTextLineReader extends TextLineReader {
           }
         }
         if (column.length() > 0) {
-          row.add(convertValue(column.toString(), row.size(), convertToColumnType));
+          row.put(String.valueOf(i),
+                  convertValue(column.toString(), row.size(), convertToColumnType));
         }
         return row;
       }

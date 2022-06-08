@@ -5,8 +5,9 @@ import ma.vi.datalines.Format;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.lang.Integer.parseInt;
 
@@ -17,11 +18,11 @@ import static java.lang.Integer.parseInt;
  */
 public class FixedLengthTextLineReader extends TextLineReader {
   @Override
-  public boolean supports(File inputFile, String fileName, Format format) {
+  public boolean supports(File file, String fileName, Format format) {
     return format != null
         && format.columns().stream()
                  .anyMatch(c -> c.location().startsWith("["))
-        && hasTextContent(inputFile);
+        && hasTextContent(file);
   }
 
   @Override
@@ -29,8 +30,8 @@ public class FixedLengthTextLineReader extends TextLineReader {
     super.openFile(inputFile, fileName, format);
     columnLocations = format.columns().stream()
                             .filter(c -> c.location().startsWith("["))
-                            .map(c -> c.location().substring(1, c.location().length()- 1).split("-"))
-                            .map(l -> l.length >= 2
+                            .map   (c -> c.location().substring(1, c.location().length()- 1).split("-"))
+                            .map   (l -> l.length >= 2
                                        ? new ColumnLocation(parseInt(l[0].trim()), parseInt(l[1].trim()))
                                        : new ColumnLocation(parseInt(l[0].trim()), -1))
                             .sorted()
@@ -38,7 +39,7 @@ public class FixedLengthTextLineReader extends TextLineReader {
   }
 
   @Override
-  protected List<Object> nextLine(boolean convertToColumnType) {
+  protected Map<String, Object> nextLine(boolean convertToColumnType) {
     try {
       String line = reader.readLine();
       if (line == null) {
@@ -50,7 +51,7 @@ public class FixedLengthTextLineReader extends TextLineReader {
         /*
          * Read columns.
          */
-        List<Object> row = new ArrayList<>();
+        Map<String, Object> row = new HashMap<>();
         for (ColumnLocation loc: columnLocations) {
           if (loc.start <= line.length()) {
             Object value = loc.end == -1 || loc.end > line.length()
@@ -60,7 +61,7 @@ public class FixedLengthTextLineReader extends TextLineReader {
               Column col = columnByLocations.get(loc.toString());
               value = DelimitedTextLineReader.convertValue(value, col);
             }
-            row.add(value);
+            row.put(loc.toString(), value);
           }
         }
         return row;
@@ -81,6 +82,11 @@ public class FixedLengthTextLineReader extends TextLineReader {
     @Override
     public int compareTo(ColumnLocation o) {
       return start - o.start;
+    }
+
+    @Override
+    public String toString() {
+      return "[" + start + (end != -1 ? "," + end : "") + "]";
     }
   }
 

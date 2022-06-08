@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.*;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 
 /**
  * An abstract implementation of {@link LineReader} simplifying concrete
@@ -15,33 +15,33 @@ import static java.util.Collections.singletonList;
  */
 public abstract class AbstractLineReader implements LineReader {
   @Override
-  public final void open(File   inputFile,
-                         String fileName,
+  public final void open(File   file,
+                         String filename,
                          Format format) {
-    this.fileName = fileName;
+    this.fileName = filename;
     buffer = new ArrayDeque<>();
 
-    openFile(inputFile, fileName, format);
+    openFile(file, filename, format);
     if (format == null) {
       /*
        * Derive structure from header.
        */
-      List<Object> line = readNextLine(true, false);
+      Map<String, Object> line = readNextLine(true, false);
       if (line != null && line != SEPARATOR) {
         List<Column> cols = new ArrayList<>();
         int i = 1;
-        for (Object o: line) {
-          String colName = o.toString().trim().toLowerCase()
-                            .replaceAll("\\W", "_");
-          cols.add(new Column(colName, "string", String.valueOf(i), null, emptyMap()));
+        for (Map.Entry<String, Object> e: line.entrySet()) {
+          String key = e.getKey();
+          String colName = key.trim().toLowerCase()
+                              .replaceAll("\\W", "_");
+          cols.add(new Column(colName, "string", key, null, emptyMap()));
           i++;
         }
         format = new Format(1, 0, true,
-                               new char[]{','}, '"', false, 1, cols);
+                            new char[]{','}, '"', false, 1, cols);
         buffer.add(line);
       }
     }
-
     this.format = format == null ? new Format() : format;
     this.maxBufferedLines = Math.max(this.format.footerLines() * 2 + 1, 10);
     columnByLocations = new HashMap<>();
@@ -60,7 +60,7 @@ public abstract class AbstractLineReader implements LineReader {
                                    Format format);
 
   @Override
-  public Iterator<List<Object>> iterator() {
+  public Iterator<Map<String, Object>> iterator() {
     return this;
   }
 
@@ -78,7 +78,7 @@ public abstract class AbstractLineReader implements LineReader {
          * do not count towards the header lines count.
          */
         while (headerLinesRead < format.headerLines()) {
-          List<Object> line = readNextLine(format.ignoreBlankLines(), false);
+          Map<String, Object> line = readNextLine(format.ignoreBlankLines(), false);
           if (line == SEPARATOR) {
             headerLinesRead = 0;
           } else {
@@ -92,7 +92,7 @@ public abstract class AbstractLineReader implements LineReader {
          * threshold.
          */
         if (buffer.isEmpty()) {
-          List<Object> line;
+          Map<String, Object> line;
           while (buffer.size() < maxBufferedLines) {
             line = readNextLine(format.ignoreBlankLines(), true);
             if (line == null || line == SEPARATOR) {
@@ -135,7 +135,7 @@ public abstract class AbstractLineReader implements LineReader {
   }
 
   @Override
-  public List<Object> next() {
+  public Map<String, Object> next() {
     if (buffer.isEmpty()) {
       if (!hasNext()) {
         throw new NoSuchElementException("No more lines to read.");
@@ -147,8 +147,8 @@ public abstract class AbstractLineReader implements LineReader {
   /**
    * Reads the next line, skipping blank lines if import definition requires so.
    */
-  private List<Object> readNextLine(boolean ignoreBlankLines, boolean convertToColumnType) {
-    List<Object> line;
+  private Map<String, Object> readNextLine(boolean ignoreBlankLines, boolean convertToColumnType) {
+    Map<String, Object> line;
     do {
       line = nextLine(convertToColumnType);
     } while (ignoreBlankLines && line != null && isEmpty(line));
@@ -159,9 +159,9 @@ public abstract class AbstractLineReader implements LineReader {
    * Returns true if the line is empty. A line is empty if the list is empty
    * or every element is null or empty.
    */
-  private boolean isEmpty(List<Object> line) {
+  private boolean isEmpty(Map<String, Object> line) {
     if (!line.isEmpty()) {
-      for (Object column : line) {
+      for (Object column: line.values()) {
         if (column != null && column.toString().trim().length() > 0) {
           return false;
         }
@@ -174,7 +174,7 @@ public abstract class AbstractLineReader implements LineReader {
    * Returns the next line from the underlying input or null if none. This method
    * should continue to return after the final line was read even if called several times.
    */
-  protected abstract List<Object> nextLine(boolean convertToColumnType);
+  protected abstract Map<String, Object> nextLine(boolean convertToColumnType);
 
   @Override
   public void remove() {
@@ -206,7 +206,7 @@ public abstract class AbstractLineReader implements LineReader {
   /**
    * A look-ahead buffer big enough to ensure that footer lines are ignored.
    */
-  private Deque<List<Object>> buffer;
+  private Deque<Map<String, Object>> buffer;
 
   /**
    * The look-ahead buffer is also used as a performance buffer with up to this
@@ -234,5 +234,5 @@ public abstract class AbstractLineReader implements LineReader {
    * `headerLinesRead` variable to 0 so that header lines are read for this new
    * sheet.
    */
-  protected static final List<Object> SEPARATOR = singletonList("SEPARATOR");
+  protected static final Map<String, Object> SEPARATOR = singletonMap("X", "SEPARATOR");
 }

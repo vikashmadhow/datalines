@@ -3,7 +3,10 @@ package ma.vi.datalines.text;
 import ma.vi.datalines.AbstractLineReader;
 import ma.vi.datalines.Format;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 /**
  * An abstract line reader for reading text files.

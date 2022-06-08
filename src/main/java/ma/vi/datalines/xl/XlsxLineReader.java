@@ -9,7 +9,7 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
-import org.apache.poi.xssf.model.SharedStringsTable;
+import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFRichTextString;
@@ -19,7 +19,9 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static javax.xml.stream.XMLStreamConstants.*;
 
@@ -30,8 +32,8 @@ import static javax.xml.stream.XMLStreamConstants.*;
  */
 public class XlsxLineReader extends AbstractLineReader {
   @Override
-  public boolean supports(File inputFile, String name, Format format) {
-    try (OPCPackage ignored = OPCPackage.open(inputFile, PackageAccess.READ)) {
+  public boolean supports(File file, String name, Format format) {
+    try (OPCPackage ignored = OPCPackage.open(file, PackageAccess.READ)) {
       return true;
     } catch (Exception e) {
       return false;
@@ -70,7 +72,7 @@ public class XlsxLineReader extends AbstractLineReader {
 
       if (!sheetIds.isEmpty()) {
         xlsx = new XSSFReader(excelPackage);
-        sharedStringsTable = xlsx.getSharedStringsTable();
+        sharedStrings = xlsx.getSharedStringsTable();
         styles = xlsx.getStylesTable();
         sheetIn = xlsx.getSheet(sheetIds.remove(0));
         reader = inputFactory.createXMLStreamReader(sheetIn);
@@ -84,11 +86,12 @@ public class XlsxLineReader extends AbstractLineReader {
   }
 
   @Override
-  protected List<Object> nextLine(boolean convertToColumnType) {
+  protected Map<String, Object> nextLine(boolean convertToColumnType) {
     try {
       if (moveToStartOfRow()) {
         // read columns
-        List<Object> row = new ArrayList<>();
+        int i = 1;
+        Map<String, Object> row = new LinkedHashMap<>();
         while (reader.nextTag() == START_ELEMENT && "c".equals(reader.getLocalName())) {
           /*
            * Get cell reference to determine column (this is necessary because
@@ -101,7 +104,7 @@ public class XlsxLineReader extends AbstractLineReader {
           /*
            * Fill gaps with null, if any.
            */
-          while (currentCell > row.size()) row.add(null);
+          while (currentCell > row.size()) row.put(String.valueOf(i++), null);
 
           /*
            * Get cell type and style.
@@ -161,7 +164,7 @@ public class XlsxLineReader extends AbstractLineReader {
 
                 case SSTINDEX:
                   int idx = Integer.parseInt(cellValue.trim());
-                  contents = sharedStringsTable.getItemAt(idx).toString();
+                  contents = sharedStrings.getItemAt(idx).toString();
                   break;
 
                 case NUMBER:
@@ -183,7 +186,7 @@ public class XlsxLineReader extends AbstractLineReader {
               }
             }
           }
-          row.add(contents);
+          row.put(String.valueOf(i++), contents);
         }
         return row;
       } else {
@@ -307,7 +310,7 @@ public class XlsxLineReader extends AbstractLineReader {
   /**
    * Shared strings table of Excel.
    */
-  private SharedStringsTable sharedStringsTable;
+  private SharedStrings sharedStrings;
 
   /**
    * Styles table.
