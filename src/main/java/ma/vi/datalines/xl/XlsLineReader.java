@@ -1,5 +1,6 @@
 package ma.vi.datalines.xl;
 
+import ma.vi.base.util.Numbers;
 import ma.vi.datalines.AbstractLineReader;
 import ma.vi.datalines.Format;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -81,6 +82,7 @@ public class XlsLineReader extends AbstractLineReader {
       }
       HSSFSheet sheet = workbook.getSheetAt(sheetId);
       rows = sheet.rowIterator();
+      estimateTotalLines = sheet.getPhysicalNumberOfRows();
     }
   }
 
@@ -121,12 +123,11 @@ public class XlsLineReader extends AbstractLineReader {
             contents = valueContainer instanceof Cell c
                      ? c.getStringCellValue()
                      : ((CellValue)valueContainer).getStringValue();
+
           } else if (type == BLANK) {
             contents = null;
+
           } else if (type == NUMERIC) {
-            /*
-             * It's a number, but almost certainly one with a special style or format
-             */
             CellStyle style = cell.getCellStyle();
             int formatIndex = style.getDataFormat();
             String formatString = style.getDataFormatString();
@@ -135,16 +136,20 @@ public class XlsLineReader extends AbstractLineReader {
             }
             double cellValue = valueContainer instanceof Cell c
                              ? c.getNumericCellValue()
-                             : ((CellValue) valueContainer).getNumberValue();
-            boolean format = applyFormatting;
-            if (formatString != null && (format || formatString.trim().equalsIgnoreCase("general"))) {
+                             : ((CellValue)valueContainer).getNumberValue();
+
+            if (DateUtil.isADateFormat(formatIndex, formatString)
+             || (columnByLocations.containsKey(String.valueOf(i + 1))
+                 && columnByLocations.get(String.valueOf(i + 1)).type().contains("date"))) {
+              contents = DateUtil.getLocalDateTime(cellValue);
+            } else if (applyFormatting && formatString != null) {
               contents = formatter.formatRawCellContents(cellValue, formatIndex, formatString);
-
-            } else if (DateUtil.isADateFormat(formatIndex, formatString)) {
-              contents = DateUtil.getJavaDate(cellValue);
-
             } else {
-              contents = cellValue;
+              String v = String.valueOf(cellValue);
+              if (v.endsWith(".0")) {
+                v = v.substring(0, v.length() - 2);
+              }
+              contents = Numbers.convert(v);
             }
           }
         }
@@ -166,7 +171,7 @@ public class XlsLineReader extends AbstractLineReader {
 
   @Override
   public long estimateTotalLines() {
-    return -1;
+    return estimateTotalLines;
   }
 
   /**
@@ -184,6 +189,8 @@ public class XlsLineReader extends AbstractLineReader {
       throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
     }
   }
+
+  private long estimateTotalLines = -1;
 
   /**
    * The Xls file input stream.

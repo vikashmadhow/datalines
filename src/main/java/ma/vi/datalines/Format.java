@@ -66,6 +66,11 @@ public record Format(int     headerLines,
 
   }
 
+  public List<String> columnNames() {
+    return columns == null ? emptyList()
+         : columns.stream().map(Column::name).toList();
+  }
+
   public static class Build {
     public Build headerLines(int headerLines) {
       this.headerLines = headerLines;

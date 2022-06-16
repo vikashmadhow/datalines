@@ -171,7 +171,7 @@ public class XlsxLineReader extends AbstractLineReader {
                   if (DateUtil.isADateFormat(formatIndex, formatString)
                    || (columnByLocations.containsKey(String.valueOf(currentCell + 1))
                     && columnByLocations.get(String.valueOf(currentCell + 1)).type().contains("date"))) {
-                    contents = DateUtil.getJavaDate(Double.parseDouble(cellValue));
+                    contents = DateUtil.getLocalDateTime(Double.parseDouble(cellValue));
                   } else if (applyFormatting && formatString != null) {
                     contents = formatter.formatRawCellContents(Double.parseDouble(cellValue), formatIndex, formatString);
                   } else {
