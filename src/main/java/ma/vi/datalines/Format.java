@@ -44,7 +44,6 @@ public record Format(int     headerLines,
                      boolean applyFormatting,
                      int     page,
                      List<Column> columns) {
-
   public Format() {
     this(1, 0, true, DEFAULT_COLUMN_SEP,
          DEFAULT_COLUMN_QUOTE, false, 1, emptyList());
@@ -63,7 +62,6 @@ public record Format(int     headerLines,
          : columns.stream().collect(toMap(Column::name, identity(),
                                           (c1, c2) -> c1,
                                           LinkedHashMap::new));
-
   }
 
   public List<String> columnNames() {

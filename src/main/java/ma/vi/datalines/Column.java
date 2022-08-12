@@ -1,5 +1,8 @@
 package ma.vi.datalines;
 
+import ma.vi.base.string.Strings;
+import org.json.JSONObject;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -32,12 +35,50 @@ public record Column(String name,
                      String location,
                      String defaultValue,
                      Map<String, String> attributes) {
-
   public Column(String name) {
     this(name, "string");
   }
 
   public Column(String name, String type) {
     this(name, type, null, null, Collections.emptyMap());
+  }
+
+  /**
+   * Returns the value of the attribute with the specified name if present in
+   * the attributes map, or null otherwise.
+   *
+   * @param name Name of attribute whose value is to be returned.
+   * @return Value associated with the attribute name or null if no such
+   *         attribute exists in the attributes map of the column.
+   */
+  public <X> X attribute(String name) {
+    return attribute(name, null);
+  }
+
+  /**
+   * Returns the value of the attribute with the specified name if present in
+   * the attributes map, or the provided default value, otherwise.
+   *
+   * @param name Name of attribute whose value is to be returned.
+   * @param defaultValue Value to return if an attribute with the specified name
+   *                     does not exist in the attributes map of the column.
+   * @return Value associated with the attribute name or the provided default
+   *         value if no such attribute exists in the attributes map of the column.
+   */
+  public <X> X attribute(String name, X defaultValue) {
+    if (attributes != null && attributes.containsKey(name))
+      return (X)JSONObject.stringToValue(attributes.get(name));
+    return defaultValue;
+  }
+
+  /**
+   * @return A human-readable label for the column, specified as the SHORT_LABEL
+   *         or LABEL attribute; if these are not provided, the label is derived
+   *         by expanding the name of the column.
+   */
+  public String label() {
+    return attributes.containsKey("SHORT_LABEL") ? attribute("SHORT_LABEL")
+         : attributes.containsKey("LABEL")       ? attribute("LABEL")
+         : Strings.capFirst(Strings.expandByCase(name()));
   }
 }
