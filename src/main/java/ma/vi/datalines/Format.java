@@ -18,7 +18,7 @@ import static java.util.stream.Collectors.toMap;
  * @param ignoreBlankLines Whether to ignore blank lines in the data. Default is true.
  * @param columnSeparatorChars Characters separating columns in the data.This is
  *                             only applicable for character-separated files such
- *                             as CSV. Default is the comma (',').
+ *                             as CSV. Default is the tab and comma ('\t', ',').
  * @param columnQuoteChar The character used to quote columns in character-separated
  *                        files. Default is the double-quote ('"').
  * @param applyFormatting For files supporting data formatting, such as Excel,
@@ -50,7 +50,7 @@ public record Format(int     headerLines,
   }
 
   public static Format TabSeparated() {
-    return newBuilder().columnSeparatorChars('\t').build();
+    return newBuilder().columnSeparatorChars('\t', ',').build();
   }
 
   public static Build newBuilder() {
@@ -118,14 +118,14 @@ public record Format(int     headerLines,
     private int     headerLines = 1;
     private int     footerLines = 0;
     private boolean ignoreBlankLines = true;
-    private char[]  columnSeparatorChars = new char[] {','};
+    private char[]  columnSeparatorChars = new char[] {'\t', ','};
     private char    columnQuoteChar = '"';
     private boolean applyFormatting = false;
     private int     page = 1;
     private final List<Column> columns = new ArrayList<>();
   }
 
-  public static char[] DEFAULT_COLUMN_SEP = new char[] {','};
+  public static char[] DEFAULT_COLUMN_SEP = new char[] {'\t', ','};
 
   public static char DEFAULT_COLUMN_QUOTE = '"';
 }

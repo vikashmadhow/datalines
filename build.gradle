@@ -9,7 +9,7 @@ plugins {
   id 'maven-publish'
 }
 
-version "0.5.1"
+version "0.5.2"
 group = 'ma.vi'
 sourceCompatibility = JavaVersion.VERSION_17
 
@@ -38,9 +38,9 @@ dependencies {
   implementation("ma.vi:base:latest.release")
 
   implementation("org.json:json:latest.release")
-  implementation("org.jsoup:jsoup:1.15.2")
+  implementation('org.jsoup:jsoup:1.15.3')
 
-  testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
 }
 
 tasks.named('test') {

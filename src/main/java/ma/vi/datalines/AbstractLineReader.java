@@ -38,7 +38,7 @@ public abstract class AbstractLineReader implements LineReader {
           i++;
         }
         format = new Format(1, 0, true,
-                            new char[]{','}, '"', false, 1, cols);
+                            new char[]{'\t', ','}, '"', false, 1, cols);
         buffer.add(line);
       }
     }
