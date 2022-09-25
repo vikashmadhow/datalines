@@ -21,7 +21,7 @@ public class FixedLengthTextLineReader extends TextLineReader {
   public boolean supports(File file, String fileName, Format format) {
     return format != null
         && format.columns().stream()
-                 .anyMatch(c -> c.location().startsWith("["))
+                 .anyMatch(c -> c.location() != null && c.location().startsWith("["))
         && hasTextContent(file);
   }
 
