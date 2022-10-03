@@ -14,17 +14,17 @@ import java.io.IOException;
  * @author vikash.madhow@gmail.com
  */
 public abstract class TextLineReader extends AbstractLineReader {
-  public static boolean hasTextContent(File inputFile) {
-    try (BufferedReader textIn = new BufferedReader(new FileReader(inputFile))) {
-      /*
-       * Read up to 10 lines to ensure that this is indeed a text file.
-       */
-      for (int i = 0; i < 10 && textIn.readLine() != null; i++);
-      return true;
-    } catch (IOException e) {
-      return false;
-    }
-  }
+//  public static boolean hasTextContent(File inputFile) {
+//    try (BufferedReader textIn = new BufferedReader(new FileReader(inputFile))) {
+//      /*
+//       * Read up to 10 lines to ensure that this is indeed a text file.
+//       */
+//      for (int i = 0; i < 10 && textIn.readLine() != null; i++);
+//      return true;
+//    } catch (IOException e) {
+//      return false;
+//    }
+//  }
 
   @Override
   public void openFile(File inputFile, String fileName, Format format) {

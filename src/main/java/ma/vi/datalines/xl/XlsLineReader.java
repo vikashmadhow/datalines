@@ -33,7 +33,7 @@ public class XlsLineReader extends AbstractLineReader {
   @Override
   public void openFile(File inputFile, String fileName, Format format) {
     try {
-      applyFormatting = format.applyFormatting();
+      applyFormatting = format == null ? false : format.applyFormatting();
       this.fileName = fileName;
 
       /*
@@ -46,7 +46,9 @@ public class XlsLineReader extends AbstractLineReader {
       /*
        * Sheets to read.
        */
-      if (format.page() <= 0) {
+      if (format == null) {
+        sheetIds.add(0);
+      } else if (format.page() <= 0) {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
           sheetIds.add(i);
         }

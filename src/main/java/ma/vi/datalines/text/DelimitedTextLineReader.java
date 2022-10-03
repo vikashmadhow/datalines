@@ -20,10 +20,12 @@ import static ma.vi.datalines.Format.DEFAULT_COLUMN_SEP;
 public class DelimitedTextLineReader extends TextLineReader {
   @Override
   public boolean supports(File file, String fileName, Format format) {
-    if (format.columnSeparatorChars().length > 0) {
-      return hasTextContent(file);
-    }
-    return false;
+    return format != null
+        && format.columnSeparatorChars().length > 0;
+//    if (format.columnSeparatorChars().length > 0) {
+//      return hasTextContent(file);
+//    }
+//    return false;
   }
 
   @Override

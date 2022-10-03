@@ -9,7 +9,7 @@ plugins {
   id 'maven-publish'
 }
 
-version "0.5.3"
+version "0.5.4"
 group = 'ma.vi'
 sourceCompatibility = JavaVersion.VERSION_17
 

@@ -43,7 +43,7 @@ public class XlsxLineReader extends AbstractLineReader {
   @Override
   public void openFile(File inputFile, String fileName, Format format) {
     try {
-      applyFormatting = format.applyFormatting();
+      applyFormatting = format == null ? false : format.applyFormatting();
       this.fileName = fileName;
 
       /*
@@ -60,9 +60,9 @@ public class XlsxLineReader extends AbstractLineReader {
       PackageRelationshipCollection relationships = workbookPart.getRelationships();
       for (PackageRelationship rel: relationships) {
         if (rel.getRelationshipType().equals(SHEET_REL_TYPE)) {
-          if (format.page() <= 0) {
+          if (format != null && format.page() <= 0) {
             sheetIds.add(rel.getId());
-          } else if (sheetNumber == format.page()) {
+          } else if (format == null || sheetNumber == format.page()) {
             sheetIds.add(rel.getId());
             break;
           }
