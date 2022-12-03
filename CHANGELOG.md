@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5] - 2022-12-03
+### Added
+- `label` can be specified using lowercase attribute names (`short_label` and 
+  `label` as well as `SHORT_LABEL` or `LABEL` previously). This aligns with how
+  these attributes are named elsewhere in ESQL projects.
+
 ## [0.5.4] - 2022-10-03
 ### Fixed
 - Resolved several NPE in readers when format provided is null (i.e. when latter

@@ -72,12 +72,14 @@ public record Column(String name,
   }
 
   /**
-   * @return A human-readable label for the column, specified as the SHORT_LABEL
-   *         or LABEL attribute; if these are not provided, the label is derived
+   * @return A human-readable label for the column, specified as the `short_label`
+   *         or `label` attribute; if these are not provided, the label is derived
    *         by expanding the name of the column.
    */
   public String label() {
-    return attributes.containsKey("SHORT_LABEL") ? attribute("SHORT_LABEL")
+    return attributes.containsKey("short_label") ? attribute("short_label")
+         : attributes.containsKey("SHORT_LABEL") ? attribute("SHORT_LABEL")
+         : attributes.containsKey("label")       ? attribute("label")
          : attributes.containsKey("LABEL")       ? attribute("LABEL")
          : Strings.capFirst(Strings.expandByCase(name()));
   }
