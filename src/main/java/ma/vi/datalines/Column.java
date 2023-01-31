@@ -83,4 +83,13 @@ public record Column(String name,
          : attributes.containsKey("LABEL")       ? attribute("LABEL")
          : Strings.capFirst(Strings.expandByCase(name()));
   }
+
+  /**
+   * Returns true if this column is of text type ('string' or 'text').
+   */
+  public boolean isText() {
+    return type != null
+        && (type.equals("string")
+         || type.equals("text"));
+  }
 }
