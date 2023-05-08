@@ -43,7 +43,7 @@ public class XlsxLineReader extends AbstractLineReader {
   @Override
   public void openFile(File inputFile, String fileName, Format format) {
     try {
-      applyFormatting = format == null ? false : format.applyFormatting();
+      applyFormatting = format != null && format.applyFormatting();
       this.fileName = fileName;
 
       /*
@@ -146,44 +146,31 @@ public class XlsxLineReader extends AbstractLineReader {
           /*
            * Read cell contents, parse and format.
            */
-          while (reader.nextTag() != END_ELEMENT || !reader.getLocalName().equals("c")) {
+          while (reader.nextTag() != END_ELEMENT
+             || !reader.getLocalName().equals("c")) {
             String cellValue = reader.getElementText();
             if (reader.getLocalName().equals("v")) {
-              switch (dataType) {
-                case BOOL:
-                  contents = cellValue.charAt(0) == '0' ? "FALSE" : "TRUE";
-                  break;
-
-                case ERROR:
-                  contents = "ERROR: " + cellValue;
-                  break;
-
-                case INLINESTR:
-                  contents = new XSSFRichTextString(cellValue).toString();
-                  break;
-
-                case SSTINDEX:
+              contents = switch (dataType) {
+                case BOOL      -> cellValue.charAt(0) == '0' ? "FALSE" : "TRUE";
+                case ERROR     -> "ERROR: " + cellValue;
+                case INLINESTR -> new XSSFRichTextString(cellValue).toString();
+                case SSTINDEX  -> {
                   int idx = Integer.parseInt(cellValue.trim());
-                  contents = sharedStrings.getItemAt(idx).toString();
-                  break;
-
-                case NUMBER:
+                  yield sharedStrings.getItemAt(idx).toString();
+                }
+                case NUMBER -> {
                   if (DateUtil.isADateFormat(formatIndex, formatString)
-                   || (columnByLocations.containsKey(String.valueOf(currentCell + 1))
-                    && columnByLocations.get(String.valueOf(currentCell + 1)).type().contains("date"))) {
-                    contents = DateUtil.getLocalDateTime(Double.parseDouble(cellValue));
+                      || (columnByLocations.containsKey(String.valueOf(currentCell + 1))
+                      && columnByLocations.get(String.valueOf(currentCell + 1)).type().contains("date"))) {
+                    yield DateUtil.getLocalDateTime(Double.parseDouble(cellValue));
                   } else if (applyFormatting && formatString != null) {
-                    contents = formatter.formatRawCellContents(Double.parseDouble(cellValue), formatIndex, formatString);
+                    yield formatter.formatRawCellContents(Double.parseDouble(cellValue), formatIndex, formatString);
                   } else {
-                    contents = Numbers.convert(cellValue.trim());
+                    yield Numbers.convert(cellValue.trim());
                   }
-                  break;
-
-                case FORMULA:
-                default:
-                  contents = cellValue;
-                  break;
-              }
+                }
+                default -> cellValue;
+              };
             }
           }
           row.put(String.valueOf(i++), contents);
