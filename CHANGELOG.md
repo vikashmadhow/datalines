@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2023-06-02
+### Added
+- Set column to default value when source does not contain a non-empty value and
+  there is a default value defined in the format for that column.
+
 ## [0.5.6] - 2023-01-31
 ### Added
 - `isText` method added to `Column` returning true if the column is of text type.  

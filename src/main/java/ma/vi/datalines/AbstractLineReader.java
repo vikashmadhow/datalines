@@ -29,13 +29,11 @@ public abstract class AbstractLineReader implements LineReader {
       Map<String, Object> line = readNextLine(true, false);
       if (line != null && line != SEPARATOR) {
         List<Column> cols = new ArrayList<>();
-        int i = 1;
         for (Map.Entry<String, Object> e: line.entrySet()) {
           String key = e.getKey();
           String colName = key.trim().toLowerCase()
                               .replaceAll("\\W", "_");
           cols.add(new Column(colName, "string", key, null, emptyMap()));
-          i++;
         }
         format = new Format(1, 0, true,
                             new char[]{'\t', ','}, '"', false, 1, cols);
@@ -152,6 +150,22 @@ public abstract class AbstractLineReader implements LineReader {
     do {
       line = nextLine(convertToColumnType);
     } while (ignoreBlankLines && line != null && isEmpty(line));
+
+    /*
+     * Apply default value.
+     */
+    if (line != null) {
+      for (Map.Entry<String, Column> e: columnByLocations.entrySet()) {
+        String loc = e.getKey();
+        Column col = e.getValue();
+        if (col.defaultValue() != null) {
+          Object val = line.get(loc);
+          if (val == null || val.toString().trim().length() == 0) {
+            line.put(loc, col.defaultValue());
+          }
+        }
+      }
+    }
     return line;
   }
 

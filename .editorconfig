@@ -203,7 +203,7 @@ ij_java_space_before_catch_left_brace = true
 ij_java_space_before_catch_parentheses = true
 ij_java_space_before_class_left_brace = true
 ij_java_space_before_colon = true
-ij_java_space_before_colon_in_foreach = true
+ij_java_space_before_colon_in_foreach = false
 ij_java_space_before_comma = false
 ij_java_space_before_do_left_brace = true
 ij_java_space_before_else_keyword = true
@@ -310,7 +310,6 @@ ij_xml_text_wrap = normal
 ij_xml_use_custom_settings = false
 
 [{*.cjs,*.js}]
-ij_continuation_indent_size = 4
 ij_javascript_align_imports = false
 ij_javascript_align_multiline_array_initializer_expression = false
 ij_javascript_align_multiline_binary_operation = false
@@ -659,7 +658,6 @@ ij_groovy_while_on_new_line = false
 ij_groovy_wrap_long_lines = false
 
 [{*.har,*.jsb2,*.jsb3,*.json,.babelrc,.eslintrc,.stylelintrc,bowerrc,jest.config}]
-indent_size = 2
 ij_json_keep_blank_lines_in_code = 0
 ij_json_keep_indents_on_empty_lines = false
 ij_json_keep_line_breaks = true
