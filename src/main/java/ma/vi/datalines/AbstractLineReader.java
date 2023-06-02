@@ -152,6 +152,22 @@ public abstract class AbstractLineReader implements LineReader {
     do {
       line = nextLine(convertToColumnType);
     } while (ignoreBlankLines && line != null && isEmpty(line));
+
+    /*
+     * Apply default value.
+     */
+    if (line != null) {
+      for (Map.Entry<String, Column> e: columnByLocations.entrySet()) {
+        String loc = e.getKey();
+        Column col = e.getValue();
+        if (col.defaultValue() != null) {
+          Object val = line.get(loc);
+          if (val == null || val.toString().trim().length() == 0) {
+            line.put(loc, col.defaultValue());
+          }
+        }
+      }
+    }
     return line;
   }
 
