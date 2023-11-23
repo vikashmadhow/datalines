@@ -10,9 +10,36 @@ plugins {
   id "synapticloop.projectFilestatistics" version "1.1.0"
 }
 
-version "0.6.0"
+version "0.6.1"
 group = 'ma.vi'
-sourceCompatibility = JavaVersion.VERSION_17
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_17
+  withJavadocJar()
+  withSourcesJar()
+}
+
+repositories {
+  mavenCentral()
+  mavenLocal()
+}
+
+dependencies {
+  implementation("org.apache.poi:poi:5.2.2")
+  implementation("org.apache.poi:poi-ooxml:5.2.2")
+
+  implementation("ma.vi:base:latest.release")
+
+  implementation("org.json:json:latest.release")
+  implementation('org.jsoup:jsoup:1.15.3')
+
+  testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+test {
+  useJUnitPlatform()
+}
 
 projectFilestatistics {
   // the files to include in the generation of the statistics
@@ -60,30 +87,4 @@ publishing {
       from components.java
     }
   }
-}
-
-java {
-  withJavadocJar()
-  withSourcesJar()
-}
-
-repositories {
-  mavenCentral()
-  mavenLocal()
-}
-
-dependencies {
-  implementation("org.apache.poi:poi:5.2.2")
-  implementation("org.apache.poi:poi-ooxml:5.2.2")
-
-  implementation("ma.vi:base:latest.release")
-
-  implementation("org.json:json:latest.release")
-  implementation('org.jsoup:jsoup:1.15.3')
-
-  testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
-}
-
-tasks.named('test') {
-  useJUnitPlatform()
 }
